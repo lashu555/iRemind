@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 @main
 struct iRemindApp: App {
@@ -13,6 +14,7 @@ struct iRemindApp: App {
 
     init() {
         let transformer = PhotosTransformer()
+        requestNotificationPermissions()
         ValueTransformer.setValueTransformer(transformer, forName: NSValueTransformerName("PhotosTransformer"))
     }
 
@@ -20,6 +22,15 @@ struct iRemindApp: App {
         WindowGroup {
             TaskListView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+        }
+    }
+    private func requestNotificationPermissions() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, error in
+            if success {
+                print("Notification permissions granted")
+            } else if let error = error {
+                print("Error requesting notification permissions: \(error)")
+            }
         }
     }
 }

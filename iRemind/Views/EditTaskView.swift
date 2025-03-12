@@ -19,7 +19,6 @@ struct EditTaskView: View {
     @State private var status: TaskStatus
     @State private var progress: Double
     
-    // Custom initializer to ensure all properties are initialized
     init(task: Task) {
         self.task = task
         _title = State(initialValue: task.title ?? "")

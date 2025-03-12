@@ -9,23 +9,19 @@ struct TaskDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Header
+                
                 headerSection
                 
-                // Description
                 if let description = task.taskDescription, !description.isEmpty {
                     descriptionSection(description)
                 }
                 
-                // Status and Progress
                 statusSection
                 
-                // Due Date
                 if let dueDate = task.dueDate {
                     dueDateSection(dueDate)
                 }
                 
-                // Photos
                 if let photosData = task.photos as? [Data], !photosData.isEmpty {
                     photosSection(photosData)
                 }

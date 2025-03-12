@@ -6,6 +6,7 @@
 //
 import SwiftUI
 import PhotosUI
+import UserNotifications
 
 struct AddTaskView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -15,6 +16,7 @@ struct AddTaskView: View {
     @State private var description = ""
     @State private var dueDate = Date()
     @State private var includeDueDate = false
+    @State private var includeReminder = false
     @State private var selectedPhotos: [UIImage] = []
     @State private var showPhotosPicker = false
     @State private var isShowingCamera = false
@@ -27,7 +29,6 @@ struct AddTaskView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Task Details Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Task Details")
                             .font(.headline)
@@ -49,7 +50,6 @@ struct AddTaskView: View {
                     }
                     .modifier(CardStyle())
                     
-                    // Due Date Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Due Date")
                             .font(.headline)
@@ -62,11 +62,14 @@ struct AddTaskView: View {
                             DatePicker("Select Date", selection: $dueDate, displayedComponents: .date)
                                 .datePickerStyle(.graphical)
                                 .tint(Theme.primary)
+                            
+                            Toggle("Set Reminder", isOn: $includeReminder)
+                                .tint(Theme.primary)
+                                .disabled(!includeDueDate)
                         }
                     }
                     .modifier(CardStyle())
                     
-                    // Status Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Status")
                             .font(.headline)
@@ -97,7 +100,6 @@ struct AddTaskView: View {
                     }
                     .modifier(CardStyle())
                     
-                    // Progress Section
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("Progress")
@@ -114,7 +116,6 @@ struct AddTaskView: View {
                     }
                     .modifier(CardStyle())
                     
-                    // Attachments Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Attachments")
                             .font(.headline)
@@ -219,6 +220,10 @@ struct AddTaskView: View {
         newTask.dueDate = includeDueDate ? dueDate : nil
         newTask.photos = selectedPhotos.compactMap { $0.pngData() } as NSObject
         
+        if includeDueDate && includeReminder {
+            scheduleNotification(for: newTask)
+        }
+        
         do {
             try viewContext.save()
             dismiss()
@@ -227,15 +232,38 @@ struct AddTaskView: View {
             showError = true
         }
     }
+    
+    private func scheduleNotification(for task: Task) {
+        let content = UNMutableNotificationContent()
+        guard let title = task.title else {return}
+        content.title = "Task Due: \(title)"
+        content.body = task.taskDescription ?? "Task deadline reached"
+        content.sound = .default
+        
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: dueDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        guard let identifier = task.id?.uuidString else {return}
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling notification: \(error)")
+            }
+        }
+    }
 }
 
-// Placeholder views for the camera and photo picker
 struct PhotoPicker: UIViewControllerRepresentable {
     @Binding var selectedImages: [UIImage]
     
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
-        config.selectionLimit = 0  // 0 means no limit
+        config.selectionLimit = 0  
         config.filter = .images
         
         let picker = PHPickerViewController(configuration: config)
