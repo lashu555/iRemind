@@ -11,6 +11,11 @@ import SwiftUI
 struct iRemindApp: App {
     let persistenceController = PersistenceController.shared
 
+    init() {
+        let transformer = PhotosTransformer()
+        ValueTransformer.setValueTransformer(transformer, forName: NSValueTransformerName("PhotosTransformer"))
+    }
+
     var body: some Scene {
         WindowGroup {
             TaskListView()

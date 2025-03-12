@@ -129,14 +129,11 @@ struct AddTaskView: View {
         newTask.creationDate = Date()
         newTask.deletedDate = nil
         newTask.dueDate = includeDueDate ? dueDate : nil
+        newTask.photos = selectedPhotos.compactMap { $0.pngData() } as NSObject
         
-        saveContext()
-        presentationMode.wrappedValue.dismiss()
-    }
-    
-    private func saveContext() {
         do {
             try viewContext.save()
+            presentationMode.wrappedValue.dismiss()
         } catch {
             let nsError = error as NSError
             fatalError("Unresolved error \(nsError), \(nsError.userInfo)")

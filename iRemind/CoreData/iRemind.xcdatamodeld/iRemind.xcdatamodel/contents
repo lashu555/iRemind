@@ -14,6 +14,7 @@
         <attribute name="deletedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="dueDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="photos" optional="YES" attributeType="Transformable"/>
         <attribute name="progress" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="status" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="taskDescription" optional="YES" attributeType="String"/>

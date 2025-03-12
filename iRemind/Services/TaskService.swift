@@ -5,6 +5,7 @@
 //  Created by Lasha Tavberidze on 12.03.25.
 //
 import CoreData
+import UIKit
 
 class TaskService {
     private let context: NSManagedObjectContext
@@ -13,12 +14,13 @@ class TaskService {
         self.context = context
     }
 
-    func addTask(title: String, status: TaskStatus, progress: Double) {
+    func addTask(title: String, status: TaskStatus, progress: Double, photos: [UIImage]) {
         let newTask = Task(context: context)
         newTask.id = UUID()
         newTask.title = title
         newTask.status = status.rawValue
         newTask.progress = progress
+        newTask.photos = photos.compactMap { $0.pngData() } as NSObject
         newTask.deletedDate = nil
         
         saveContext()
@@ -34,7 +36,7 @@ class TaskService {
         saveContext()
     }
 
-    func updateTask(_ task: Task, title: String? = nil, status: TaskStatus? = nil, progress: Double? = nil) {
+    func updateTask(_ task: Task, title: String? = nil, status: TaskStatus? = nil, progress: Double? = nil, photos: [UIImage]? = nil) {
         if let title = title {
             task.title = title
         }
@@ -45,6 +47,10 @@ class TaskService {
 
         if let progress = progress {
             task.progress = progress
+        }
+
+        if let photos = photos {
+            task.photos = photos.compactMap { $0.pngData() } as NSObject
         }
 
         saveContext()

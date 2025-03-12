@@ -38,6 +38,22 @@ struct TaskDetailView: View {
                     .padding()
             }
 
+            if let photosData = task.photos as? [Data], !photosData.isEmpty {
+                ScrollView(.horizontal) {
+                    HStack {
+                        ForEach(photosData, id: \.self) { data in
+                            if let image = UIImage(data: data) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 100)
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+
             Spacer()
         }
         .navigationTitle("Task Details")
