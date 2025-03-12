@@ -1,0 +1,37 @@
+# macOS system files
+.DS_Store
+
+# Xcode project workspace and user settings
+xcuserdata/
+xcshareddata/
+
+# Build files
+DerivedData/
+build/
+
+# Cocoapods dependencies (if used)
+Pods/
+Podfile.lock
+
+# Swift Package Manager dependencies
+.swiftpm/
+Package.resolved
+
+# Carthage dependencies (if used)
+Carthage/
+
+# Fastlane metadata (if used)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# Ignore environment files
+.env
+
+# Firebase crashlytics and GoogleService files (if not meant to be shared)
+GoogleService-Info.plist
+
+# Ignore unnecessary logs
+*.log
+
