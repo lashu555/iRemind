@@ -9,7 +9,7 @@ import PhotosUI
 
 struct AddTaskView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     
     @State private var title = ""
     @State private var description = ""
@@ -20,87 +20,169 @@ struct AddTaskView: View {
     @State private var isShowingCamera = false
     @State private var status: TaskStatus = .todo
     @State private var progress: Double = 0.0
+    @State private var showError = false
+    @State private var errorMessage = ""
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Task Details")) {
-                    TextField("Title", text: $title)
-                    
-                    TextField("Description (Optional)", text: $description)
-                        .frame(minHeight: 100)
-                }
-                
-                Section(header: Text("Due Date")) {
-                    Toggle("Set Due Date", isOn: $includeDueDate)
-                    
-                    if includeDueDate {
-                        DatePicker("Due Date", selection: $dueDate, displayedComponents: .date)
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Task Details Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Task Details")
+                            .font(.headline)
+                            .foregroundColor(Theme.text)
+                        
+                        TextField("Title", text: $title)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .font(.body)
+                        
+                        TextEditor(text: $description)
+                            .frame(minHeight: 100)
+                            .padding(4)
+                            .background(Theme.secondaryBackground)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                            )
                     }
-                }
-                
-                Section(header: Text("Attachments")) {
-                    Button(action: {
-                        showPhotosPicker = true
-                    }) {
-                        HStack {
-                            Image(systemName: "photo")
-                            Text("Add from Photos")
+                    .modifier(CardStyle())
+                    
+                    // Due Date Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Due Date")
+                            .font(.headline)
+                            .foregroundColor(Theme.text)
+                        
+                        Toggle("Set Due Date", isOn: $includeDueDate)
+                            .tint(Theme.primary)
+                        
+                        if includeDueDate {
+                            DatePicker("Select Date", selection: $dueDate, displayedComponents: .date)
+                                .datePickerStyle(.graphical)
+                                .tint(Theme.primary)
                         }
                     }
+                    .modifier(CardStyle())
                     
-                    Button(action: {
-                        isShowingCamera = true
-                    }) {
-                        HStack {
-                            Image(systemName: "camera")
-                            Text("Take Photo")
+                    // Status Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Status")
+                            .font(.headline)
+                            .foregroundColor(Theme.text)
+                        
+                        HStack(spacing: 0) {
+                            ForEach(TaskStatus.allCases) { taskStatus in
+                                Button(action: { status = taskStatus }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: taskStatus.icon)
+                                            .imageScale(.small)
+                                        Text(taskStatus.description)
+                                            .font(.subheadline)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(status == taskStatus ? taskStatus.color.opacity(0.2) : Theme.secondaryBackground)
+                                    .foregroundColor(status == taskStatus ? taskStatus.color : Theme.secondaryText)
+                                }
+                                .buttonStyle(.plain)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(status == taskStatus ? taskStatus.color : Color.clear, lineWidth: 1)
+                                )
+                            }
                         }
                     }
+                    .modifier(CardStyle())
                     
-                    if !selectedPhotos.isEmpty {
-                        ForEach(0..<selectedPhotos.count, id: \.self) { index in
-                            HStack {
-                                Image(uiImage: selectedPhotos[index])
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: 100)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-                                    selectedPhotos.remove(at: index)
-                                }) {
-                                    Image(systemName: "trash")
-                                        .foregroundColor(.red)
+                    // Progress Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Progress")
+                                .font(.headline)
+                                .foregroundColor(Theme.text)
+                            Spacer()
+                            Text("\(Int(progress * 100))%")
+                                .font(.subheadline)
+                                .foregroundColor(Theme.secondaryText)
+                        }
+                        
+                        Slider(value: $progress, in: 0...1, step: 0.01)
+                            .tint(status.color)
+                    }
+                    .modifier(CardStyle())
+                    
+                    // Attachments Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Attachments")
+                            .font(.headline)
+                            .foregroundColor(Theme.text)
+                        
+                        HStack(spacing: 16) {
+                            Button(action: { showPhotosPicker = true }) {
+                                VStack {
+                                    Image(systemName: "photo.on.rectangle")
+                                        .font(.title2)
+                                    Text("Gallery")
+                                        .font(.caption)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Theme.secondaryBackground)
+                                .cornerRadius(8)
+                            }
+                            
+                            Button(action: { isShowingCamera = true }) {
+                                VStack {
+                                    Image(systemName: "camera")
+                                        .font(.title2)
+                                    Text("Camera")
+                                        .font(.caption)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Theme.secondaryBackground)
+                                .cornerRadius(8)
+                            }
+                        }
+                        .foregroundColor(Theme.primary)
+                        
+                        if !selectedPhotos.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(selectedPhotos.indices, id: \.self) { index in
+                                        ZStack(alignment: .topTrailing) {
+                                            Image(uiImage: selectedPhotos[index])
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 100, height: 100)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            
+                                            Button(action: { selectedPhotos.remove(at: index) }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundColor(.white)
+                                                    .background(Circle().fill(Color.black.opacity(0.5)))
+                                            }
+                                            .padding(4)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+                    .modifier(CardStyle())
                 }
-                
-                Section(header: Text("Status")) {
-                    Picker("Status", selection: $status) {
-                        ForEach(TaskStatus.allCases, id: \.self) { status in
-                            Text(status.description).tag(status)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                }
-                
-                Section(header: Text("Progress")) {
-                    Slider(value: $progress, in: 0...1, step: 0.01)
-                    Text("\(Int(progress * 100))%")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+                .padding()
             }
             .navigationTitle("Add New Task")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }
+                    .foregroundColor(Theme.destructive)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -108,14 +190,20 @@ struct AddTaskView: View {
                         saveTask()
                     }
                     .disabled(title.isEmpty)
+                    .foregroundColor(title.isEmpty ? Theme.secondaryText : Theme.primary)
                 }
             }
-            .sheet(isPresented: $showPhotosPicker) {
-                PhotoPicker(selectedImages: $selectedPhotos)
-            }
-            .sheet(isPresented: $isShowingCamera) {
-                CameraView(image: $selectedPhotos)
-            }
+        }
+        .sheet(isPresented: $showPhotosPicker) {
+            PhotoPicker(selectedImages: $selectedPhotos)
+        }
+        .sheet(isPresented: $isShowingCamera) {
+            CameraView(image: $selectedPhotos)
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
         }
     }
     
@@ -124,7 +212,7 @@ struct AddTaskView: View {
         newTask.id = UUID()
         newTask.title = title
         newTask.taskDescription = description.isEmpty ? nil : description
-        newTask.status = status.rawValue
+        newTask.status = Int16(status.rawValue)
         newTask.progress = progress
         newTask.creationDate = Date()
         newTask.deletedDate = nil
@@ -133,10 +221,10 @@ struct AddTaskView: View {
         
         do {
             try viewContext.save()
-            presentationMode.wrappedValue.dismiss()
+            dismiss()
         } catch {
-            let nsError = error as NSError
-            fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            errorMessage = "Failed to save task: \(error.localizedDescription)"
+            showError = true
         }
     }
 }

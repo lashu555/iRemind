@@ -1,11 +1,5 @@
-//
-//  TaskListView.swift
-//  iRemind
-//
-//  Created by Lasha Tavberidze on 12.03.25.
-//
-
 import SwiftUI
+import CoreData
 
 struct TaskListView: View {
     @FetchRequest(
@@ -16,67 +10,93 @@ struct TaskListView: View {
     
     @Environment(\.managedObjectContext) private var viewContext
     @State private var showingAddTask = false
-
+    @State private var showingRecycleBin = false
+    
     var body: some View {
         NavigationView {
             List {
-                // To Do Section
-                Section(header: Text("To Do")) {
-                    ForEach(tasks.filter { $0.status == TaskStatus.todo.rawValue }) { task in
-                        NavigationLink(destination: TaskDetailView(task: task)) {
-                            TaskRow(task: task)
-                        }
-                    }
-                    .onDelete { indexSet in
-                        deleteTask(at: indexSet, status: .todo)
-                    }
-                }
-                
-                // Doing Section
-                Section(header: Text("Doing")) {
-                    ForEach(tasks.filter { $0.status == TaskStatus.doing.rawValue }) { task in
-                        NavigationLink(destination: TaskDetailView(task: task)) {
-                            TaskRow(task: task)
-                        }
-                    }
-                    .onDelete { indexSet in
-                        deleteTask(at: indexSet, status: .doing)
-                    }
-                }
-                
-                // Done Section
-                Section(header: Text("Done")) {
-                    ForEach(tasks.filter { $0.status == TaskStatus.done.rawValue }) { task in
-                        NavigationLink(destination: TaskDetailView(task: task)) {
-                            TaskRow(task: task)
-                        }
-                    }
-                    .onDelete { indexSet in
-                        deleteTask(at: indexSet, status: .done)
-                    }
-                }
+                taskSection(title: "To Do", status: .todo, color: Theme.todoColor)
+                taskSection(title: "Doing", status: .doing, color: Theme.doingColor)
+                taskSection(title: "Done", status: .done, color: Theme.doneColor)
             }
-            .navigationTitle("Personal Reminder")
+            .listStyle(.insetGrouped)
+            .navigationTitle("iRemind")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        showingRecycleBin = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundColor(Theme.secondaryText)
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
+                    Button {
                         showingAddTask = true
-                    }) {
-                        Image(systemName: "plus")
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(Theme.primary)
                     }
                 }
             }
             .sheet(isPresented: $showingAddTask) {
                 AddTaskView()
             }
+            .sheet(isPresented: $showingRecycleBin) {
+                RecycleBinView()
+            }
+        }
+    }
+    
+    private func taskSection(title: String, status: TaskStatus, color: Color) -> some View {
+        Section {
+            let filteredTasks = tasks.filter { $0.status == status.rawValue }
+            
+            if filteredTasks.isEmpty {
+                Text("No tasks")
+                    .font(.callout)
+                    .foregroundColor(Theme.secondaryText)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(filteredTasks) { task in
+                    NavigationLink {
+                        TaskDetailView(task: task)
+                    } label: {
+                        TaskRow(task: task)
+                    }
+                }
+                .onDelete { indexSet in
+                    deleteTask(at: indexSet, status: status)
+                }
+            }
+        } header: {
+            HStack {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(color)
+                
+                Spacer()
+                
+                Text("\(tasks.filter { $0.status == status.rawValue }.count)")
+                    .font(.caption)
+                    .foregroundColor(Theme.secondaryText)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Theme.secondaryBackground)
+                    .clipShape(Capsule())
+            }
+            .padding(.vertical, 4)
         }
     }
     
     private func deleteTask(at offsets: IndexSet, status: TaskStatus) {
-        for index in offsets {
-            let task = tasks.filter { $0.status == status.rawValue }[index]
-            task.deletedDate = Date()
-            saveContext()
+        withAnimation {
+            for index in offsets {
+                let task = tasks.filter { $0.status == status.rawValue }[index]
+                task.deletedDate = Date()
+                saveContext()
+            }
         }
     }
     
@@ -84,12 +104,7 @@ struct TaskListView: View {
         do {
             try viewContext.save()
         } catch {
-            let nsError = error as NSError
-            fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            print("Error saving context: \(error)")
         }
     }
-}
-
-#Preview {
-    TaskListView()
-}
+} 

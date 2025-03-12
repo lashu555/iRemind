@@ -26,7 +26,7 @@ struct EditTaskView: View {
         _description = State(initialValue: task.taskDescription ?? "")
         _dueDate = State(initialValue: task.dueDate ?? Date())
         _includeDueDate = State(initialValue: task.dueDate != nil)
-        _status = State(initialValue: TaskStatus(rawValue: task.status) ?? .todo)
+        _status = State(initialValue: TaskStatus(rawValue: Int(task.status)) ?? .todo)
         _progress = State(initialValue: task.progress)
     }
 
@@ -85,7 +85,7 @@ struct EditTaskView: View {
     private func saveTask() {
         task.title = title
         task.taskDescription = description.isEmpty ? nil : description
-        task.status = status.rawValue
+        task.status = Int16(status.rawValue)
         task.progress = progress
         task.dueDate = includeDueDate ? dueDate : nil
         

@@ -18,7 +18,7 @@ class TaskService {
         let newTask = Task(context: context)
         newTask.id = UUID()
         newTask.title = title
-        newTask.status = status.rawValue
+        newTask.status = Int16(status.rawValue)
         newTask.progress = progress
         newTask.photos = photos.compactMap { $0.pngData() } as NSObject
         newTask.deletedDate = nil
@@ -42,7 +42,7 @@ class TaskService {
         }
 
         if let status = status {
-            task.status = status.rawValue
+            task.status = Int16(status.rawValue)
         }
 
         if let progress = progress {
